@@ -21,11 +21,7 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
-			const { track } = await player.play(channel, query, {
-				nodeOptions: {
-					metadata: interaction
-				}
-			});
+			const { track } = await player.play(channel, query);
 
 			return interaction.followUp(`🎶 **${track.title}** enqueued!`);
 		} catch (error) {
