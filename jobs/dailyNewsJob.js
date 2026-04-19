@@ -11,7 +11,8 @@ function startDailyNewsJob(client) {
         return;
     }
 
-    console.log(`Starting daily news cron job with schedule: ${schedule}`);
+    const timezone = process.env.TIMEZONE || 'America/New_York';
+    console.log(`Starting daily news cron job with schedule: ${schedule} in timezone: ${timezone}`);
 
     cron.schedule(schedule, async () => {
         console.log('Running daily news job...');
@@ -35,6 +36,9 @@ function startDailyNewsJob(client) {
         } catch (error) {
             console.error('Error executing daily news job:', error);
         }
+    }, {
+        scheduled: true,
+        timezone: timezone
     });
 }
 
