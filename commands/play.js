@@ -18,15 +18,36 @@ module.exports = {
 			return interaction.reply({ content: 'You are not connected to a voice channel!', ephemeral: true });
 		}
 
+		// Check bot permissions in the voice channel
+		const permissions = channel.permissionsFor(interaction.client.user);
+		if (!permissions.has('Connect') || !permissions.has('Speak')) {
+			return interaction.reply({ content: 'I need permissions to join and speak in your voice channel!', ephemeral: true });
+		}
+
 		await interaction.deferReply();
 
 		try {
-			const { track } = await player.play(channel, query);
+			const searchResult = await player.search(query, {
+				requestedBy: interaction.user
+			});
 
-			return interaction.followUp(`🎶 **${track.title}** enqueued!`);
+			if (!searchResult || !searchResult.hasTracks()) {
+				return interaction.editReply(`❌ No results found for **${query}**.`);
+			}
+
+			await player.play(channel, searchResult, {
+				nodeOptions: {
+					metadata: {
+						channel: interaction.channel
+					}
+				}
+			});
+
+			const track = searchResult.tracks[0];
+			return interaction.editReply(`🎶 **${track.title}** by ${track.author} enqueued!`);
 		} catch (error) {
 			console.error('Error in /play command:', error);
-			return interaction.followUp(`Something went wrong while trying to play: ${error.message}`);
+			return interaction.editReply(`Something went wrong: ${error.message}`);
 		}
 	},
 };
