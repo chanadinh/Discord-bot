@@ -34,10 +34,13 @@ if (fs.existsSync(commandsPath)) {
 // Initialize discord-player
 process.env.FFMPEG_PATH = require('ffmpeg-static');
 const player = new Player(client);
-player.extractors.loadDefault();
 
-client.once(Events.ClientReady, c => {
+client.once(Events.ClientReady, async c => {
     console.log(`Ready! Logged in as ${c.user.tag}`);
+
+    // Load audio extractors (YouTube, Spotify, etc.)
+    await player.extractors.loadDefault();
+    console.log('Audio extractors loaded successfully.');
     
     // Start the cron job
     startDailyNewsJob(client);
