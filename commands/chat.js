@@ -10,8 +10,8 @@ module.exports = {
 				.setDescription('The AI model to use')
 				.setRequired(true)
 				.addChoices(
-					{ name: 'GPT-4.1 (Latest)', value: 'gpt-4.1' },
-					{ name: 'GPT-4.1 Mini (Fast)', value: 'gpt-4.1-mini' },
+					{ name: 'GPT-5.4 (Latest)', value: 'gpt-5.4' },
+					{ name: 'GPT-5.4 Mini (Fast)', value: 'gpt-5.4-mini' },
 					{ name: 'GPT-4o (Capable)', value: 'gpt-4o' },
 					{ name: 'GPT-4o Mini (Efficient)', value: 'gpt-4o-mini' },
 					{ name: 'o3-mini (Reasoning)', value: 'o3-mini' },
