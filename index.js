@@ -32,6 +32,7 @@ if (fs.existsSync(commandsPath)) {
 }
 
 // Initialize discord-player
+process.env.FFMPEG_PATH = require('ffmpeg-static');
 const player = new Player(client);
 player.extractors.loadDefault();
 
