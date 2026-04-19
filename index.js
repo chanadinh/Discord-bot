@@ -39,8 +39,13 @@ client.once(Events.ClientReady, async c => {
     console.log(`Ready! Logged in as ${c.user.tag}`);
 
     // Load audio extractors (YouTube, Spotify, etc.)
-    await player.extractors.loadDefault();
-    console.log('Audio extractors loaded successfully.');
+    try {
+        await player.extractors.loadDefault();
+        console.log('Audio extractors loaded successfully.');
+    } catch (error) {
+        console.error('Failed to load audio extractors:', error.message);
+        console.error('Music commands may not work. Other commands will still function.');
+    }
     
     // Start the cron job
     startDailyNewsJob(client);
