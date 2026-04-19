@@ -2,10 +2,11 @@ require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits, Events } = require('discord.js');
-const { Player } = require('discord-player');
+const { DisTube } = require('distube');
+const { SpotifyPlugin } = require('@distube/spotify');
 const { startDailyNewsJob } = require('./jobs/dailyNewsJob');
 const { fetchNews } = require('./services/newsService');
-const { summarizeNews } = require('./services/openaiService');
+const { summarizeNews, generateAgentResponse } = require('./services/openaiService');
 
 const client = new Client({
     intents: [
@@ -31,21 +32,20 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// Initialize discord-player
-process.env.FFMPEG_PATH = require('ffmpeg-static');
-const player = new Player(client);
+// Initialize DisTube
+client.distube = new DisTube(client, {
+    emitNewSongOnly: true,
+    emitAddSongWhenCreatingQueue: false,
+    emitAddListWhenCreatingQueue: false,
+    plugins: [
+        new SpotifyPlugin({
+            emitEventsAfterFetching: true
+        })
+    ]
+});
 
 client.once(Events.ClientReady, async c => {
     console.log(`Ready! Logged in as ${c.user.tag}`);
-
-    // Load audio extractors (YouTube, Spotify, etc.)
-    try {
-        await player.extractors.loadDefault();
-        console.log('Audio extractors loaded successfully.');
-    } catch (error) {
-        console.error('Failed to load audio extractors:', error.message);
-        console.error('Music commands may not work. Other commands will still function.');
-    }
     
     // Start the cron job
     startDailyNewsJob(client);
@@ -74,6 +74,44 @@ client.on(Events.MessageCreate, async message => {
         } catch (error) {
             console.error('Error in manual trigger:', error);
             await message.channel.send('Failed to generate news. Please check console logs.');
+        }
+        return; // Don't let the agent respond to command messages
+    }
+
+    // Autonomous Chat Agent Logic
+    
+    // Check if the bot should reply
+    // Conditions: 1) Bot is mentioned, 2) Message is a reply to the bot, 3) 5% random chance
+    const isMentioned = message.mentions.has(client.user);
+    const isReplyToBot = message.reference && message.mentions.repliedUser && message.mentions.repliedUser.id === client.user.id;
+    const isRandomHit = Math.random() < 0.05; // 5% chance
+
+    if (isMentioned || isReplyToBot || isRandomHit) {
+        try {
+            // Show typing indicator
+            await message.channel.sendTyping();
+
+            // Fetch the last 8 messages for context
+            const fetchedMessages = await message.channel.messages.fetch({ limit: 8 });
+            
+            // Map messages to OpenAI format (oldest first)
+            const chatHistory = fetchedMessages.reverse().map(m => {
+                const role = m.author.id === client.user.id ? 'assistant' : 'user';
+                let content = m.content;
+                // Prepend username for user messages to give the bot context of who is speaking
+                if (role === 'user') {
+                    content = `${m.author.username}: ${content}`;
+                }
+                return { role, content };
+            });
+
+            const agentResponse = await generateAgentResponse(chatHistory);
+            
+            if (agentResponse) {
+                await message.reply(agentResponse);
+            }
+        } catch (error) {
+            console.error('Error in autonomous agent:', error);
         }
     }
 });

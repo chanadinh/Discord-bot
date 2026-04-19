@@ -81,4 +81,40 @@ async function chatWithModel(model, message) {
     }
 }
 
-module.exports = { summarizeNews, chatWithModel };
+async function generateAgentResponse(chatHistory) {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY is not defined in the environment variables.');
+    }
+
+    const openai = new OpenAI({
+        apiKey: OPENAI_API_KEY,
+    });
+
+    const systemPrompt = `You are a helpful, slightly sarcastic, and tech-savvy Discord bot named CyberNewsBot. 
+You are currently hanging out in a Discord channel with other users.
+They are talking, and you have decided to chime in.
+Keep your responses relatively brief (1-3 sentences) so they fit well in a chat room environment.
+Respond naturally to the conversation context provided below.`;
+
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory
+    ];
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: messages,
+            temperature: 0.8,
+            max_tokens: 300,
+        });
+
+        return response.choices[0].message.content.trim();
+    } catch (error) {
+        console.error(`Error generating agent response:`, error.message);
+        return null;
+    }
+}
+
+module.exports = { summarizeNews, chatWithModel, generateAgentResponse };
