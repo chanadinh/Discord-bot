@@ -56,5 +56,29 @@ Keep the tone informative and concise. Emphasize the key takeaways. Do not inclu
         return "An error occurred while generating the daily summary.";
     }
 }
+async function chatWithModel(model, message) {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY is not defined in the environment variables.');
+    }
 
-module.exports = { summarizeNews };
+    const openai = new OpenAI({
+        apiKey: OPENAI_API_KEY,
+    });
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: model,
+            messages: [{ role: 'user', content: message }],
+            temperature: 0.7,
+            max_tokens: 1500,
+        });
+
+        return response.choices[0].message.content.trim();
+    } catch (error) {
+        console.error(`Error chatting with model ${model}:`, error.message);
+        return `Sorry, I encountered an error while trying to communicate with ${model}.`;
+    }
+}
+
+module.exports = { summarizeNews, chatWithModel };
